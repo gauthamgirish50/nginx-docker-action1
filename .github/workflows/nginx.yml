@@ -1,0 +1,42 @@
+name: Custom NGINX E2E Test
+ 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+ 
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      # Step 1: Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      # Step 2: Build custom NGINX image
+      - name: Build Docker image
+        run: docker build -t my-nginx .
+ 
+      # Step 3: Run container
+      - name: Run NGINX container
+        run: docker run -d -p 8080:80 --name nginx-test my-nginx
+ 
+      # Step 4: Wait for NGINX
+      - name: Wait for NGINX to be ready
+        run: |
+          for i in {1..10}; do
+            if curl -s http://localhost:8080; then
+              echo "NGINX is up!"
+              exit 0
+            fi
+            echo "Waiting for NGINX..."
+            sleep 5
+          done
+          echo "NGINX did not start in time" && exit 1
+ 
+      # Step 5: Test response
+      - name: Verify custom page
+        run: |
+          curl -I http://localhost:8080
+          curl http://localhost:8080 | grep "Hello from GitHub Actions"
